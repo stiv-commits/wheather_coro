@@ -1,28 +1,43 @@
 #pragma once
 
-#include "MdrCommonCfg.h"
-#include "timertaskcfg.h"
-#include "statistic.h"
-#include "DbCfg.h"
-#include "StrmCfg.h"
-#include "ShdConfig.h"
+#include <string>
+#include <cstdlib>
+#include <functional>
+#include <string>
 
-namespace mshd
+struct SrvConfig
 {
-  struct Config
-  {
-    struct General
-    {
-      std::string logCfgPath;
-      std::string cfgPath;
-      std::string tempPath;
-    }general;
+  std::string ip;
+  uint16_t port;
+};
 
-    mdr::Config mdrCfg;
-    TimerTaskCfg timertaskCfg;
-    StatSettings statCfg;
-    db::Config dbConfig;
-    strm::Config strmConfig;
-    ShdConfiguration shdConfig;
-  };
-}
+struct CommonCfg
+{
+  uint16_t threads = 0;
+  uint16_t requestPause = 0;
+};
+
+struct GeoCfg
+{
+  std::string key;
+  std::string url;
+  std::string port;
+  uint32_t numConnection = 1;
+};
+
+struct WeathCfg
+{
+  std::string key;
+  std::string url;
+  std::string port;
+  uint32_t numConnection = 1;
+};
+struct IniSettings
+{
+  SrvConfig serverCfg;
+  CommonCfg commonCfg;
+  GeoCfg geoCfg;
+  WeathCfg weathCfg;
+};
+
+

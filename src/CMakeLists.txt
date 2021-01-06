@@ -22,9 +22,14 @@ set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "wheather")
 
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-
-
+  logger
+  executor
+  httpclient
+  httpserver
+  common
   Boost::program_options
   Boost::system
+#  OpenSSL::Crypto
+#  OpenSSL::SSL
 )
 

@@ -1,148 +1,78 @@
-#include "MshdManager.h"
-#include "StrmMngr.h"
-#include "logger.h"
-#include "timertaskmgr.h"
-#include "pktallocator.h"
-#include "pktallocator_mcmp.h"
 
-#include "DbsManager.h"
-#include "WriteMngr.h"
+#include "WeatherManager.h"
+#include "HttpSession.h"
 
+#include <thread>
 
-class MshdManager::AllocatorStatExecuter : public StatShard {
-public:
-  typedef std::shared_ptr<AllocatorStatExecuter> Ptr;
-  void GetStatistic(StatKvPairs& kvp) override
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
+#include <boost/asio/ip/tcp.hpp>
+//#include "WeatherClient.h"
+//#include "YanCoorClient.h"
+
+using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+
+namespace bl
+{
+  struct Dependencies
   {
-    const auto measurementKoeff = updateIntervalSec_ * (1024 * 1024) / 8; // bytes -> Mb, interval -> sec
-    auto allocate_in_packets_ = PktAllocatorStats::allocate_in_packets_.load(std::memory_order_relaxed);
-    auto allocate_out_packets_ = PktAllocatorStats::allocate_out_packets_.load(std::memory_order_relaxed);
-    auto allocate_in_dynamic_ = PktAllocatorStats::allocate_in_dynamic_.load(std::memory_order_relaxed);
-    auto allocate_out_dynamic_ = PktAllocatorStats::allocate_out_dynamic_.load(std::memory_order_relaxed);
+    HttpSessionPtr httpSession;
+  };
 
-    kvp.Set("Allocator.Delta", (int64_t)allocate_in_packets_ - (int64_t)allocate_out_packets_);
-    kvp.Set("Allocator.DynamicDelta", (int64_t)allocate_in_dynamic_ - (int64_t)allocate_out_dynamic_);
-
-    kvp.Set("Allocator.PacketsPs", ((int64_t)allocate_in_packets_ - PktAllocatorStats::last_f_in_packets_) / updateIntervalSec_);
-    kvp.Set("Allocator.DynamicPs", ((int64_t)allocate_in_dynamic_- PktAllocatorStats::last_f_in_dynamic) / updateIntervalSec_);
-
-    PktAllocatorStats::last_f_in_packets_ = allocate_in_packets_;
-    PktAllocatorStats::last_f_in_dynamic = allocate_in_dynamic_;
+  boost::asio::awaitable<void> BusinessLogic(Dependencies dep)
+  {
+    auto adr = co_await dep.httpSession->GetRequest();
+    if (adr.Empty()) co_return;
 
 
-    {
-      auto allocate_in_packets_ = AllocatorMCMP::PktAllocatorStats::allocate_in_packets_.load(std::memory_order_relaxed);
-      auto allocate_out_packets_ = AllocatorMCMP::PktAllocatorStats::allocate_out_packets_.load(std::memory_order_relaxed);
-      auto allocate_in_dynamic_ = AllocatorMCMP::PktAllocatorStats::allocate_in_dynamic_.load(std::memory_order_relaxed);
-      auto allocate_out_dynamic_ = AllocatorMCMP::PktAllocatorStats::allocate_out_dynamic_.load(std::memory_order_relaxed);
-
-      kvp.Set("AllocatorMcmp.Delta", (int64_t)allocate_in_packets_ - (int64_t)allocate_out_packets_);
-      kvp.Set("AllocatorMcmp.DynamicDelta", (int64_t)allocate_in_dynamic_ - (int64_t)allocate_out_dynamic_);
-
-      kvp.Set("AllocatorMcmp.PacketsPs", ((int64_t)allocate_in_packets_ - AllocatorMCMP::PktAllocatorStats::last_f_in_packets_) / updateIntervalSec_);
-      kvp.Set("AllocatorMcmp.DynamicPs", ((int64_t)allocate_in_dynamic_ - AllocatorMCMP::PktAllocatorStats::last_f_in_dynamic) / updateIntervalSec_);
-
-      AllocatorMCMP::PktAllocatorStats::last_f_in_packets_ = allocate_in_packets_;
-      AllocatorMCMP::PktAllocatorStats::last_f_in_dynamic = allocate_in_dynamic_;
-    }
   }
+}
 
-  size_t updateIntervalSec_ = 60;
-};
-
-MshdManager::MshdManager(const mshd::Config& cfg)
+Manager::Manager(const IniSettings& cfg)
   :cfg_(cfg)
 {
-  db::Dependencies dep;
-  dbsManager_ = std::make_shared<db::DbsManager>(cfg_.dbConfig, dep);
+  ex::Executor::Config cfgEx;
+  cfgEx.num_cpu = cfg_.commonCfg.threads;
+  executor_ = std::make_shared<ex::Executor>(cfgEx);
 
-  wrt::Manager::Config cfgActive;
-  cfgActive.MaxSizeDump = cfg.dbConfig.DumpSize;
-  cfgActive.MaxMinDump = cfg.dbConfig.DumpMinutes;
-  cfgActive.PrintStatTime= cfg.statCfg.updateInterval;
-  cfgActive.numActive= cfg.dbConfig.NumActiveDb;
-  cfgActive.cpuFsync = cfg.dbConfig.fsync_cpu;
-  wrt::Manager::Dependencies depActive;
-  depActive.dbManager = dbsManager_;
-  writer_ = std::make_shared<wrt::Manager>(cfgActive, depActive);
+  Server::Config cfgsrv;
+  cfgsrv.ip = cfg_.serverCfg.ip;
+  cfgsrv.port = cfg_.serverCfg.port;
+  srv_ = std::make_unique<Server>(cfgsrv, executor_->GetExecutor());
 
-  strm::Dependencies strmDep;
-  strmDep.db = writer_;
-  strm::Config cfgstrm;
-  cfgstrm = cfg_.strmConfig;
-  strmMgr_ = std::make_shared<strm::Manager>(cfgstrm, strmDep);
+  srv_->SetCBNewSession([&](boost::asio::ip::tcp::socket&& socket, uint32_t connId)
+    {
 
-  rdr::Config cfgrdr;
-  cfgrdr.PrintStatTime = cfg.statCfg.updateInterval;
-  cfgrdr.execCfg = cfg.dbConfig.execCfg;
-  cfgrdr.shdCfg = cfg.shdConfig;
-  rdr::Dependecies deprdr;
-  deprdr.dbManager = dbsManager_;
-  readerMgr_ = std::make_shared<rdr::Manager>(cfgrdr, deprdr);
+      HttpSession::Dependecies dep{ executor_->GetExecutor(), std::move(socket) };
+      HttpSession::Config cfg
+      {
+        .numSession = connId
+      };
+      auto session = std::make_shared<HttpSession>(std::move(dep), cfg);
 
-  mdr::Dependencies mdrDep;
-  mdrDep.strmMgr = strmMgr_;
-  mdrDep.rdrMgr = readerMgr_;
-  mdrManager_ = std::make_shared<mdr::Manager>(cfg_.mdrCfg, mdrDep);
-}
+      bl::Dependencies depbl;
+      depbl.httpSession = session;
+      boost::asio::co_spawn(executor_->GetExecutor(), bl::BusinessLogic(depbl), boost::asio::detached);
 
-MshdManager::~MshdManager()
-{
 
-}
-
-bool MshdManager::Init()
-{
-  GetStatSnapshot()->Initialize(cfg_.statCfg);
-
-  if (!getTimerTaskManager()->initialize(cfg_.timertaskCfg))
-  {
-    LOG4CPLUS_ERROR(getLogger(), "MshdManager::initialize: fault to initialize timertaskmanager");
-
-    return false;
-  }
-  getTimerTaskManager()->addTask(GetStatSnapshot());
-
-  mdrManager_->Init();
-  dbsManager_->Init();
-
-  auto pid = dbsManager_->GetLastStreamId();
-  wrt::Manager::InitParam initParam;
-  initParam.LastStreamId = pid;
-  writer_->Init(initParam);
-
-  readerMgr_->Init();
-
-  strmMgr_->Init();
-
-  allocStat_ = std::make_shared<AllocatorStatExecuter>();
-  allocStat_->updateIntervalSec_ = GetStatSnapshot()->GetInterval();
-  GetStatSnapshot()->RegisterStatShard(allocStat_.get());
-
-  return true;
+    });
 }
 
 
-void MshdManager::Run()
+//void Manager::getcoor(const Address& adr, boost::asio::yield_context yld)
+//{
+//  auto coor = geoClient_->get_async(yld, adr);
+//}
+
+void Manager::Stop()
 {
-  getTimerTaskManager()->run();
-
-  LOG4CPLUS_INFO(getLogger(), "MshdManager::Run()");
-
-  mdrManager_->Run();
-  dbsManager_->Run();
-  readerMgr_->Run();
-  writer_->Run();
+  srv_->Stop();
+  executor_->Stop();
 }
-
-void MshdManager::Stop()
+void Manager::Run()
 {
-  getTimerTaskManager()->stop();
 
-  mdrManager_->Stop();
-  strmMgr_->Stop();
-  writer_->Stop();
-  dbsManager_->Stop();
-  readerMgr_->Stop();
-  LOG4CPLUS_INFO(getLogger(), "MshdManager::Stop()");
+  srv_->Run();
+  executor_->Run();
+
 }

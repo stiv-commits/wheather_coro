@@ -5,52 +5,20 @@
 #include <boost/program_options/variables_map.hpp>
 #include <boost/winapi/dll.hpp>
 
-#include "version.h"
-#include "MshdManager.h"
+#include "WeatherManager.h"
 #include "IniLoader.h"
 #include "main.h"
 const int retError_ = -1;
 const int retSuccess_ = 0;
 
-std::string replaceFileExt(std::string fname, const std::string& ext)
-{
-  if (fname.empty())
-  {
-    char path[_MAX_PATH + 1];
-    if (GetModuleFileNameA(0, path, sizeof(path) / sizeof(path[0])) > 0)
-    {
-      fname = path;
-    }
-  }
-
-  if (fname.rfind(".") != std::string::npos)
-  {
-    fname.replace(fname.rfind("."), ext.length(), ext);
-  }
-  else
-  {
-    fname.append(ext);
-  }
-
-  return fname;
-}
 #include "logger.h"
-void InitLogger()
-{
-  log4cplus::BasicConfigurator config;
-  config.configure();
-  log4cplus::Logger logger = log4cplus::Logger::getInstance(
-    LOG4CPLUS_TEXT("main"));
-  logger.setLogLevel(log4cplus::ALL_LOG_LEVEL);
-  initializeLogger(logger);
-}
 
+
+//extern void HttpStart();
 
 int main(int argc, char** argv)
 {
   std::string inifile;
-  //INILoader iniLoader;
-
   using boost::program_options::value;
   using boost::program_options::variables_map;
   using boost::program_options::command_line_parser;
@@ -83,38 +51,24 @@ int main(int argc, char** argv)
 
   if (vm.count("version") != 0U)
   {
-    std::cout << GetVersionString() << std::endl;
+    VersionInfo();
     return retSuccess_;
   }
-
-  if (inifile.empty())
-  {
-    inifile = replaceFileExt(argv[0], ".ini");
-  }
-
+  
+  LogStart();
 
   //setlocale(LC_ALL, "Russian_Russia.1251");
   //setlocale(LC_ALL, "ru_RU.UTF-8");
 
-  mshd::Config cfg;
   IniLoader iniLoader;
   if (!iniLoader.LoadConfiguration(inifile)) return 1;
 
-  if (!initializeLogger(iniLoader.GetSettings().general.logCfgPath.c_str()/*"D:/work/MSHD/mshd_server/cfg/log.cfg"*/, "filelogger"))
-  {
-    std::cout << std::endl << "Fault to initialize loggers" << std::endl;
-    return false;
-  }
-  
-  LogStart();
-  iniLoader.PrintCfg();
+  Manager manager(iniLoader.GetSettings());
+  manager.Run();
 
-  MshdManager mshd(iniLoader.GetSettings());
-  mshd.Init();
-
-  mshd.Run();
+  //HttpStart();
   getchar();
-  mshd.Stop();
+  manager.Stop();
 
 
   return retSuccess_;

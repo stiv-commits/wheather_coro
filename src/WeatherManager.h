@@ -1,38 +1,39 @@
 #pragma once
 
-#include <cstdint>
+#include "WConfig.h"
+#include "Server.h"
 
-#include "MdrManager.h"
-#include "MshdConfig.h"
-#include "DbsManager.h"
-#include "IODbIntf.h"
-#include "StrmMngr.h"
-#include "RdrManager.h"
-#include "WriteMngr.h"
+#include "Executor.h"
+#include <memory>
+#include <set>
 
-class MshdManager 
+//class HttpSession;
+//using HttpSessionPtr = std::shared_ptr<HttpSession>;
+//
+//class YanCoorClient;
+//using YanCoorClientPtr = std::shared_ptr<YanCoorClient>;
+//
+//class WeatherClient;
+//using WeatherClientPtr = std::shared_ptr<WeatherClient>;
+
+class Manager
 {
 public:
-
-
-  MshdManager(const mshd::Config& cfg);
-  ~MshdManager();
-  bool Init();
+  Manager(const IniSettings& cfg);
+  ~Manager() = default;
   void Run();
   void Stop();
 
 private:
 
-  mshd::Config cfg_;
-  mdr::ManagerPtr mdrManager_;
+  //void getcoor(const Address& adr, boost::asio::yield_context yld);
 
-  class AllocatorStatExecuter;
-  std::shared_ptr<AllocatorStatExecuter> allocStat_;
+  IniSettings cfg_;
+  ex::ExecutorPtr executor_;
 
-  std::shared_ptr <db::DbsManager> dbsManager_;
-  std::shared_ptr <wrt::Manager> writer_;
+  ServerPtr srv_;
+  //std::set<HttpSessionPtr> sessions_;
+  //YanCoorClientPtr geoClient_;
+  //WeatherClientPtr weatherClient_;
 
-  std::shared_ptr <strm::Manager> strmMgr_;
-  
-  std::shared_ptr<rdr::Manager> readerMgr_;
 };
