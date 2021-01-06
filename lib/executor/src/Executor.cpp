@@ -3,18 +3,18 @@
 #include <boost/asio.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/thread.hpp>
-
-#ifdef __linux__
-#   ifndef _GNU_SOURCE
-#     define _GNU_SOURCE 
-#   endif
-#   include <unistd.h>
-#   include <sys/syscall.h>
-#   include <pthread.h>
-inline pid_t get_id_thread() { return syscall(SYS_gettid); }
-#else
-inline boost::thread::id get_id_thread() { return boost::this_thread::get_id(); }
-#endif
+//
+//#ifdef __linux__
+//#   ifndef _GNU_SOURCE
+//#     define _GNU_SOURCE 
+//#   endif
+//#   include <unistd.h>
+//#   include <sys/syscall.h>
+//#   include <pthread.h>
+//inline pid_t get_id_thread() { return syscall(SYS_gettid); }
+//#else
+//inline boost::thread::id get_id_thread() { return boost::this_thread::get_id(); }
+//#endif
 
 namespace ex
 {
@@ -40,7 +40,7 @@ namespace ex
     for (uint32_t i = 0; i < cfg_.num_cpu; i++)
       ioctxThreads_.emplace_back([&, i]
     {
-      LOG_INFO("WorkThread: thread started (PID " << get_id_thread() << ')');
+      LOG_INFO("WorkThread: thread started (PID ')'");
 
       try
       {
