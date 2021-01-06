@@ -14,6 +14,7 @@ PUBLIC include)
 
 set(CLOSE_LIBS
   logger
+  executor
   Boost::system
   OpenSSL::Crypto
   OpenSSL::SSL
