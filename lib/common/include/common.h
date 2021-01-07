@@ -37,3 +37,7 @@ struct Weather
 {
   inline bool Empty() { return true; }
 };
+
+
+std::string url_decode(std::string const& str);
+std::string url_encode(const std::string& str);
