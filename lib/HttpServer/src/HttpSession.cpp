@@ -42,7 +42,7 @@ namespace
 
   boost::beast::http::response<boost::beast::http::string_body> CreateWeatherResponse(const Weather& weather, const HttpSession::ReqParam& reqParam)
   {
-    http::string_body::value_type body; // TODO = makeBody(weather);
+    http::string_body::value_type body = weather.data;
     auto size = body.size();
 
     http::response<http::string_body> res{

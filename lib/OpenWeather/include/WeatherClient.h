@@ -34,6 +34,7 @@ public:
   };
 
   WeatherClient(const Config& cfg, const Dependencies& dep);
+  ~WeatherClient();
 
   bool Init();
   void Stop();

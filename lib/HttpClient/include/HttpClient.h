@@ -36,6 +36,8 @@ namespace httpclient
     };
 
     ManagerConn(const Config& cfg, const Dependencies& dep);
+    ~ManagerConn();
+
     void Init();
     boost::asio::awaitable<boost::beast::http::response<boost::beast::http::dynamic_body>>
       SendRecvAsync(const boost::beast::http::request<boost::beast::http::string_body>& req);

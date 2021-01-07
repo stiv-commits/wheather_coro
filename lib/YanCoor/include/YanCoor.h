@@ -34,6 +34,7 @@ public:
   };
 
   YanCoorClient(const Config& cfg, const Dependencies& dep);
+  ~YanCoorClient();
 
   bool Init();
   void Stop();

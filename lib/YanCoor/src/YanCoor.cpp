@@ -93,6 +93,11 @@ YanCoorClient::YanCoorClient(const Config& cfg, const Dependencies& dep)
   httpsClient_ = std::make_shared<httpclient::ManagerConn>(cfgclient, depclient);
 }
 
+YanCoorClient::~YanCoorClient()
+{
+  LOG_DEBUG(prefixLogConn_ << "YanCoorClient::~YanCoorClient " << this);
+}
+
 bool YanCoorClient::Init()
 {
   httpsClient_->Init();

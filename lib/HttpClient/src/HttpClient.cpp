@@ -201,6 +201,11 @@ namespace httpclient
       prefixLogConn_ = "[CONN_" + cfg_.idConn + "] ";
     }
 
+    ~HttpClient()
+    {
+      LOG_DEBUG(prefixLogConn_ << "HttpClient::~HttpClient " << this);
+    }
+
     bool IsResolve() const
     {
       return resoveResults_.size();
@@ -313,6 +318,11 @@ namespace httpclient
     :cfg_(cfg), dep_(dep)
   {
     prefixLogConn_ = "[" + cfg_.nameClient + "] ";
+  }
+
+  ManagerConn::~ManagerConn()
+  {
+    LOG_DEBUG(prefixLogConn_ << "ManagerConn::~ManagerConn" << this);
   }
 
   void ManagerConn::Init()

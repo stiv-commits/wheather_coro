@@ -93,6 +93,10 @@ WeatherClient::WeatherClient(const Config& cfg, const Dependencies& dep)
   httpsClient_ = std::make_shared<httpclient::ManagerConn>(cfgclient, depclient);
 }
 
+WeatherClient::~WeatherClient()
+{
+  LOG_DEBUG(prefixLogConn_ << "WeatherClient::~WeatherClient " << this);
+}
 boost::asio::awaitable <Weather> WeatherClient::GetWeather(const Coordinate& coord)
 {
   LOG_DEBUG(prefixLogConn_ << "Try get weather by coordinate : " << coord);
