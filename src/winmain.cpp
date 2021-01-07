@@ -62,14 +62,15 @@ int main(int argc, char** argv)
 
   IniLoader iniLoader;
   if (!iniLoader.LoadConfiguration(inifile)) return 1;
+  
+  {
+    Manager manager(iniLoader.GetSettings());
+    manager.Run();
 
-  Manager manager(iniLoader.GetSettings());
-  manager.Run();
-
-  //HttpStart();
-  getchar();
-  manager.Stop();
-
+    //HttpStart();
+    getchar();
+    manager.Stop();
+  }
 
   return retSuccess_;
 }

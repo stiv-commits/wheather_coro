@@ -27,6 +27,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   httpclient
   httpserver
   YanCoor
+  OpenWeather
   common
   Boost::program_options
   Boost::system

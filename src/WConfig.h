@@ -5,11 +5,9 @@
 #include <functional>
 #include <string>
 
-struct SrvConfig
-{
-  std::string ip;
-  uint16_t port;
-};
+#include "Server.h"
+#include "YanCoor.h"
+#include "WeatherClient.h"
 
 struct CommonCfg
 {
@@ -17,27 +15,12 @@ struct CommonCfg
   uint16_t requestPause = 0;
 };
 
-struct GeoCfg
-{
-  std::string key;
-  std::string url;
-  std::string port;
-  uint32_t numConnection = 1;
-};
-
-struct WeathCfg
-{
-  std::string key;
-  std::string url;
-  std::string port;
-  uint32_t numConnection = 1;
-};
 struct IniSettings
 {
-  SrvConfig serverCfg;
+  Server::Config serverCfg;
+  YanCoorClient::Config geoCfg;
   CommonCfg commonCfg;
-  GeoCfg geoCfg;
-  WeathCfg weathCfg;
+  WeatherClient::Config weathCfg;
 };
 
 

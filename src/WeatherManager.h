@@ -4,6 +4,9 @@
 #include "Server.h"
 
 #include "Executor.h"
+#include "YanCoor.h"
+#include "WeatherClient.h"
+
 #include <memory>
 #include <set>
 
@@ -33,7 +36,7 @@ private:
 
   ServerPtr srv_;
   //std::set<HttpSessionPtr> sessions_;
-  //YanCoorClientPtr geoClient_;
-  //WeatherClientPtr weatherClient_;
+  YanCoorClientPtr geoClient_;
+  WeatherClientPtr weatherClient_;
 
 };
