@@ -26,6 +26,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   executor
   httpclient
   httpserver
+  YanCoor
   common
   Boost::program_options
   Boost::system
