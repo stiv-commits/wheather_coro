@@ -32,6 +32,7 @@ namespace httpclient
       uint8_t numConn = 1;
       std::string url;
       std::string port;
+      std::string nameClient;
     };
 
     ManagerConn(const Config& cfg, const Dependencies& dep);
@@ -53,5 +54,7 @@ namespace httpclient
     std::mutex mut_;
     std::deque<HttpClientPtr> httpClients_;
     std::atomic_bool fEnd_ = false;
+    std::string prefixLogConn_;
   };
+  using ManagerConnPtr = std::shared_ptr<ManagerConn>;
 }

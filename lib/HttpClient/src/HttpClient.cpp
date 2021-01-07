@@ -191,14 +191,14 @@ namespace httpclient
     {
       std::string url;
       std::string port;
-      uint32_t idConn = 0;
+      std::string idConn;
     };
 
     HttpClient(boost::asio::io_context& ioc, const HttpsCfg& cfg)
       :ioc_(ioc), stream_{ ioc_, ctx_ }, cfg_(cfg)
     {
       load_root_certificates(ctx_);
-      prefixLogConn_ = "[CONN_" + std::to_string(cfg_.idConn) + "] ";
+      prefixLogConn_ = "[CONN_" + cfg_.idConn + "] ";
     }
 
     bool IsResolve() const
@@ -284,6 +284,7 @@ namespace httpclient
         boost::beast::flat_buffer b;
         LOG_ERROR(prefixLogConn_ << "Try read answer");
         co_await http::async_read(stream_, b, res, boost::asio::use_awaitable);
+        LOG_ERROR(prefixLogConn_ << res);
       }
       catch (std::exception& e) {
         LOG_ERROR(prefixLogConn_ << "Recieve answer from " << cfg_.url << "[" << cfg_.port << "]" << " failed. Exception: " << e.what());
@@ -311,7 +312,7 @@ namespace httpclient
   ManagerConn::ManagerConn(const Config& cfg, const Dependencies& dep)
     :cfg_(cfg), dep_(dep)
   {
-
+    prefixLogConn_ = "[" + cfg_.nameClient + "] ";
   }
 
   void ManagerConn::Init()
@@ -326,7 +327,7 @@ namespace httpclient
 
     while (cntClient--)
     {
-      cfg.idConn = cntClient;
+      cfg.idConn = cfg_.nameClient + "_" + std::to_string(cntClient);
       auto httpClient = std::make_shared<HttpClient>(dep_.ioc, cfg);
       boost::asio::co_spawn(dep_.ioc, Connect(httpClient), detached);
     }
@@ -337,7 +338,7 @@ namespace httpclient
     auto client = co_await GetClient();
     if (!client)
     {
-      LOG_ERROR("Cant get HttpClient");
+      LOG_ERROR(prefixLogConn_ << "Cant get HttpClient");
       http::response<http::dynamic_body> res;
       co_return res;
     }
