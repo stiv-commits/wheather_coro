@@ -6,4 +6,5 @@ add_subdirectory(logger)
 add_subdirectory(executor)
 add_subdirectory(common)
 add_subdirectory(YanCoor)
+add_subdirectory(OpenWeather)
 

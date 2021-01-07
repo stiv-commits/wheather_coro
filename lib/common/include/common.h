@@ -35,9 +35,20 @@ inline std::ostream& operator << (std::ostream& str, const Coordinate& coor)
 
 struct Weather
 {
-  inline bool Empty() { return true; }
+  std::string data;
+  inline bool Empty() const { return data.empty(); }
 };
-
+inline std::ostream& operator << (std::ostream& str, const Weather& weath)
+{
+  std::string_view coorout;
+  if (!weath.Empty())
+  {
+    if (weath.data.size() > 30) coorout = std::string_view(weath.data.data(), 30);
+    else coorout = std::string_view(weath.data.data(), weath.data.size());
+  }
+  str << "Weather: " << std::endl << coorout << "...";
+  return str;
+}
 
 std::string url_decode(std::string const& str);
 std::string url_encode(const std::string& str);
