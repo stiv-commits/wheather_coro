@@ -29,6 +29,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   YanCoor
   OpenWeather
   common
+  DbIntf
+  in_memory_db
+  postgre
   Boost::program_options
   Boost::system
 #  OpenSSL::Crypto

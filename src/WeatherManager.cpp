@@ -1,27 +1,37 @@
 
 #include "WeatherManager.h"
 #include "HttpSession.h"
+#include "InMemoryDb.h"
+#include "Postgre.h"
+#include "logger.h"
 
 #include <thread>
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/ip/tcp.hpp>
-//#include "WeatherClient.h"
-//#include "YanCoorClient.h"
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 namespace bl
 {
+
   struct Dependencies
   {
+    Dependencies(boost::asio::io_context& ioc_)
+      :ioc(ioc_)
+    {}
+
+    boost::asio::io_context& ioc;
     HttpSessionPtr httpSession;
     YanCoorClientPtr geoClient;
     WeatherClientPtr weatherClient;
+    DbIntfPtr db;
   };
 
-  boost::asio::awaitable<void> BusinessLogic(Dependencies dep)
+  boost::asio::awaitable<void> BusinessLogic(Dependencies dep, CommonCfg cfg)
   {
     auto adr = co_await dep.httpSession->GetRequest();
     if (adr.Empty())
@@ -30,21 +40,35 @@ namespace bl
       co_return;
     }
 
-    auto coor = co_await dep.geoClient->GetCoordinate(adr);
+    auto coor = dep.db->GetCoorByAdrress(adr, cfg.livetime);
     if (coor.Empty())
     {
-      co_await dep.httpSession->SendAnswerError("Cant get coordinate");
-      co_return;
+      coor = co_await dep.geoClient->GetCoordinate(adr);
+      if (coor.Empty())
+      {
+        co_await dep.httpSession->SendAnswerError("Cant get coordinate");
+        co_return;
+      }
+      dep.db->PutCoordinate(adr, coor);
     }
 
-    auto weather = co_await dep.weatherClient->GetWeather(coor);
+    auto weather = dep.db->GetWeatherByCoor(coor, cfg.livetime, cfg.distance);
     if (weather.Empty())
     {
-      co_await dep.httpSession->SendAnswerError("Cant get weather");
-      co_return;
+      weather = co_await dep.weatherClient->GetWeather(coor);
+      if (weather.Empty())
+      {
+        co_await dep.httpSession->SendAnswerError("Cant get weather");
+        co_return;
+      }
+      dep.db->PutWeather(coor, weather);
     }
 
     co_await dep.httpSession->SendAnswer(weather);
+
+    boost::asio::deadline_timer timer(dep.ioc);
+    timer.expires_from_now(boost::posix_time::seconds(cfg.requestPause));
+    co_await timer.async_wait(boost::asio::use_awaitable);
   }
 }
 
@@ -67,11 +91,12 @@ Manager::Manager(const IniSettings& cfg)
       };
       auto session = std::make_shared<HttpSession>(std::move(dep), cfg);
 
-      bl::Dependencies depbl;
+      bl::Dependencies depbl(executor_->GetExecutor());
       depbl.httpSession = session;
       depbl.geoClient = geoClient_;
       depbl.weatherClient = weatherClient_;
-      boost::asio::co_spawn(executor_->GetExecutor(), bl::BusinessLogic(depbl), boost::asio::detached);
+      depbl.db = dbIntf_;
+      boost::asio::co_spawn(executor_->GetExecutor(), bl::BusinessLogic(depbl, cfg_.commonCfg), boost::asio::detached);
     });
 
   YanCoorClient::Dependencies depy{ executor_->GetExecutor() };
@@ -79,6 +104,10 @@ Manager::Manager(const IniSettings& cfg)
 
   WeatherClient::Dependencies depw{ executor_->GetExecutor() };
   weatherClient_ = std::make_shared<WeatherClient>(cfg_.weathCfg, depw);
+
+  if (cfg_.commonCfg.typeStorage == "in_memory") dbIntf_ = std::make_shared<InMemoryDb>(InMemoryDb::Config{}, InMemoryDb::Dependencies{});
+  else if (cfg_.commonCfg.typeStorage == "postgre") dbIntf_ = std::make_shared<Postgre>(Postgre::Config{}, Postgre::Dependencies{});
+  else LOG_ERROR("Unknow type storage : " << cfg_.commonCfg.typeStorage);
 }
 
 

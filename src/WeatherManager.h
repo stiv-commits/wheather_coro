@@ -6,6 +6,7 @@
 #include "Executor.h"
 #include "YanCoor.h"
 #include "WeatherClient.h"
+#include "DbIntf.h"
 
 #include <memory>
 #include <set>
@@ -38,5 +39,5 @@ private:
   //std::set<HttpSessionPtr> sessions_;
   YanCoorClientPtr geoClient_;
   WeatherClientPtr weatherClient_;
-
+  DbIntfPtr dbIntf_;
 };

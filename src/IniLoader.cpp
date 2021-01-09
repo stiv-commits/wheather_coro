@@ -21,6 +21,9 @@ namespace
     cfg_.commonCfg.threads = pt.get<uint16_t>("common.threads", 1);
     cfg_.commonCfg.requestPause = pt.get<uint16_t>("common.request_pause", 1);
     if (cfg_.commonCfg.requestPause > 60) cfg_.commonCfg.requestPause = 60;
+    cfg_.commonCfg.typeStorage = pt.get<std::string>("common.type_storage", "in_memory");
+    cfg_.commonCfg.livetime = pt.get<uint32_t >("common.live_time", 60);
+    cfg_.commonCfg.distance = pt.get<uint32_t >("common.radius", 100);
   }
 
   void ProcessGeoSetings(const boost::property_tree::ptree& pt, IniSettings& cfg_)

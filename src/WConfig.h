@@ -13,6 +13,9 @@ struct CommonCfg
 {
   uint16_t threads = 0;
   uint16_t requestPause = 0;
+  uint32_t livetime = 0;
+  uint32_t distance = 0;
+  std::string typeStorage;
 };
 
 struct IniSettings
