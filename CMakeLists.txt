@@ -20,21 +20,19 @@ else()
 endif()
 
 
+include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+conan_basic_setup()
 # ------------- BOOST ------------
 #set(Boost_DEBUG 1)
+
 option(ENABLE_BOOST "Enable boost libraries" ON)
-option(Boost_NO_BOOST_CMAKE ON)
-set( ENV{Boost_DIR}       "${CMAKE_SOURCE_DIR}/third_party/boost" )
 
 set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost 1.75.0 REQUIRED COMPONENTS 
+find_package(Boost 1.76.0 REQUIRED COMPONENTS 
 	program_options system log date_time thread)	
 add_definitions(-D__STDC_FORMAT_MACROS -DBOOST_ALL_NO_LIB -DBOOST_MPL_CFG_NO_PREPROCESSED_HEADERS 
-  -DBOOST_MPL_LIMIT_LIST_SIZE=50
   -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)
 
-# ------------- OPENSSL ------------
-find_package(OpenSSL REQUIRED)
 
 # ------------- PROJECT  ------------
 add_subdirectory(lib)

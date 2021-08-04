@@ -86,3 +86,18 @@ weather --inifile /path/to/conffile.ini
 | weather |url | Url сервера погоды
 | weather |port | порт сервера погоды
 | weather |connection | Количетсво соединений до сервера погоды
+
+## Сборка проекта
+
+Для сборки необходим менеджер зависимостей [Conan](https://conan.io)
+
+Последовательность сборки для Visual Studio 16:
+
+```
+mkdir build
+cd build
+conan install ..
+cmake .. -G "Visual Studio 16"
+cmake --build . --config Release
+```
+

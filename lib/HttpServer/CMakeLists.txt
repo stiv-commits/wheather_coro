@@ -18,8 +18,7 @@ set(CLOSE_LIBS
   executor
   common
   Boost::system
-  OpenSSL::Crypto
-  OpenSSL::SSL
+  ${CONAN_LIBS_OPENSSL}
 )
 
 if(WIN32)

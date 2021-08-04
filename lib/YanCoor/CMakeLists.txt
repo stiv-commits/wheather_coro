@@ -17,8 +17,7 @@ set(CLOSE_LIBS
   httpclient
   common
   Boost::system
-  OpenSSL::Crypto
-  OpenSSL::SSL
+  ${CONAN_LIBS_OPENSSL}
 )
 
 if(WIN32)
