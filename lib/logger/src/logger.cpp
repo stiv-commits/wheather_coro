@@ -69,7 +69,6 @@ void logger::FormatPrefix(std::stringstream& ss, logger::LogLevel l, char const 
 {
   std::time_t t = std::time(nullptr);
   ss << std::put_time(std::localtime(&t), "%F %T");
-  //ss << boost::posix_time::second_clock::local_time();
   ss << " [" << GetFileName(file) << ":" << line << "]";
   ss << " [" << std::this_thread::get_id() << "]";
   ss << " [" << LevelToStr((l)) << "] ";

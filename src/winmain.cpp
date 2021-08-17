@@ -14,8 +14,6 @@ const int retSuccess_ = 0;
 #include "logger.h"
 
 
-//extern void HttpStart();
-
 int main(int argc, char** argv)
 {
   std::string inifile;
@@ -57,9 +55,6 @@ int main(int argc, char** argv)
   
   LogStart();
 
-  //setlocale(LC_ALL, "Russian_Russia.1251");
-  //setlocale(LC_ALL, "ru_RU.UTF-8");
-
   IniLoader iniLoader;
   if (!iniLoader.LoadConfiguration(inifile)) return 1;
   
@@ -67,7 +62,6 @@ int main(int argc, char** argv)
     Manager manager(iniLoader.GetSettings());
     manager.Run();
 
-    //HttpStart();
     getchar();
     manager.Stop();
   }

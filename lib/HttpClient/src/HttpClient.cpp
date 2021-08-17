@@ -3,6 +3,24 @@
 #include <boost/asio/ssl.hpp>
 #include "logger.h"
 
+#include <boost/asio/ssl/error.hpp>
+#include <boost/asio/ssl/stream.hpp>
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/asio/detached.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/write.hpp>
+
+using boost::asio::ip::tcp;
+using boost::asio::awaitable;
+using boost::asio::co_spawn;
+using boost::asio::detached;
+using boost::asio::use_awaitable;
+namespace this_coro = boost::asio::this_coro;
+#if defined(BOOST_ASIO_ENABLE_HANDLER_TRACKING)
+# define use_awaitable \
+  boost::asio::use_awaitable_t(__FILE__, __LINE__, __PRETTY_FUNCTION__)
+#endif
 
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
@@ -115,68 +133,8 @@ load_root_certificates(ssl::context& ctx)
     LOG_ERROR("certificate" << ec.message());
   }
 }
-//
-//void HttpsClient::Stop()
-//{
-//  fStop = true;
-//  if (timer_) timer_->cancel();
-//}
 
 
-//auto async_wait(boost::asio::deadline_timer& timer, uint32_t delayMs)
-//{
-//  struct Awaitable
-//  {
-//    boost::asio::deadline_timer& timer;
-//    uint32_t delayMs;
-//    boost::system::error_code ec;
-//
-//    ~Awaitable()
-//    {
-//    }
-//
-//    bool await_ready() const noexcept
-//    {
-//      return false;
-//    }
-//
-//    void await_resume() const noexcept
-//    {
-//      //if (ec) throw boost::system::system_error(ec);
-//    }
-//
-//    void await_suspend(std::coroutine_handle<> h) noexcept
-//    {
-//      timer.expires_from_now(boost::posix_time::milliseconds(delayMs));
-//      timer.async_wait([this, h](auto ec) mutable {
-//        this->ec = ec;
-//        h.resume();
-//        });
-//    }
-//
-//  };
-//
-//  return Awaitable{ timer, delayMs };
-//}
-
-#include <boost/asio/ssl/error.hpp>
-#include <boost/asio/ssl/stream.hpp>
-#include <boost/asio/deadline_timer.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/asio/detached.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/write.hpp>
-
-using boost::asio::ip::tcp;
-using boost::asio::awaitable;
-using boost::asio::co_spawn;
-using boost::asio::detached;
-using boost::asio::use_awaitable;
-namespace this_coro = boost::asio::this_coro;
-#if defined(BOOST_ASIO_ENABLE_HANDLER_TRACKING)
-# define use_awaitable \
-  boost::asio::use_awaitable_t(__FILE__, __LINE__, __PRETTY_FUNCTION__)
-#endif
 
 namespace httpclient
 {
@@ -484,10 +442,6 @@ boost::asio::awaitable<void> ProcessConn(boost::asio::io_context& ioc, httpclien
     "Москва,+Тверская+улица,+дом+7﻿";
   //https://geocode-maps.yandex.ru/1.x/?apikey=6640ee66-af25-4715-88e8-113eb9a7df7c&geocode=Москва,+Тверская+улица,+дом+7﻿
 
-  //http::request<http::string_body> req{ http::verb::get, url , 11 };
-  //req.set(http::field::host, "geocode-maps.yandex.ru");
-  //req.set(http::field::user_agent, "BEAST");
-  //req.set(http::field::connection, "keep-alive");
   http::request<http::string_body> req;
   auto res = co_await man.SendRecvAsync(req);
 

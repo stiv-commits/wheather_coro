@@ -49,7 +49,6 @@ namespace
       boost::property_tree::json_parser::read_json(ss, pt);
       try
       {
-        //auto GeoObjectCollection = pt.get<boost::property_tree::ptree>("response.GeoObjectCollection");
         auto GeoObjectCollection = pt.get_child("response.GeoObjectCollection");
         int found = GeoObjectCollection.get<int>("metaDataProperty.GeocoderResponseMetaData.found");
         if (found)
@@ -58,7 +57,6 @@ namespace
           auto point = featureMember.begin()->second.get_child("GeoObject.Point");
           std::string pos = point.get<std::string>("pos");
 
-          //std::replace(pos.begin(), pos.end(), '.', ',');
           auto endlat = pos.find(' ');
 
           coor.lon = static_cast<float>(atof(pos.c_str()));
